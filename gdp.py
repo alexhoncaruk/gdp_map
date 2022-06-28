@@ -24,17 +24,17 @@ df1['Country'] = df1['Country'].str.replace('Dominican Republic', 'Dominican Rep
 df1['Country'] = df1['Country'].str.replace('Eswatini', 'eSwatini')
 df1['Country'] = df1['Country'].str.replace('Equatorial Guinea', 'Eq. Guinea')
 
-### --- Change 'GDP Per Capita' values in GeoJsonToolTip from format of 12345.0 to $12,345 --- ###
+### --- Change 'GDP Per Capita' values in GeoJsonToolTip from format of 12345.0 (USD) to €11,604 --- ###
 
 df2 = df1.copy()
-df2['Estimate_UN'] = df2['Estimate_UN'].apply(lambda g:str(float(g)))
 
-def func1(x):
-    x = x.replace('.0','')
-    return x
+df2['Estimate_UN'] = df2['Estimate_UN'].fillna(0.0).astype(int)
+df2['Estimate_UN'] = df2['Estimate_UN'].apply(lambda g:g*0.94) # Convert USD to EUR
 
-df2['Estimate_UN'] = df2['Estimate_UN'].apply(func1)
-df2['Estimate_UN'] = '$' + df2['Estimate_UN'].astype(str)
+df3 = df2.copy()
+
+df2['Estimate_UN'] = df2['Estimate_UN'].apply(lambda g:str(int(g)))
+df2['Estimate_UN'] = '€' + df2['Estimate_UN'].astype(str)
 
 length = (df2['Estimate_UN'].str.len())
 
@@ -42,7 +42,7 @@ df2.loc[length == 7, 'Estimate_UN'] = df2[['Estimate_UN']].astype(str).replace(r
 df2.loc[length == 6, 'Estimate_UN'] = df2[['Estimate_UN']].astype(str).replace(r"(\d{2})(\d+)", r"\1,\2", regex=True)
 df2.loc[length == 5, 'Estimate_UN'] = df2[['Estimate_UN']].astype(str).replace(r"(\d{1})(\d+)", r"\1,\2", regex=True)
 
-### --- Create geopandas map overlay --- ###
+### --- Create map --- ###
 
 world = geopandas.read_file(geopandas.datasets.get_path('naturalearth_lowres'))
 df1 = world.merge(df1, how='left', left_on=['name'], right_on=['Country'])
@@ -50,6 +50,9 @@ df1 = df1.dropna(subset=['Estimate_UN'])
 
 df2 = world.merge(df2, how='left', left_on=['name'], right_on=['Country'])
 df2 = df2.dropna(subset=['Estimate_UN'])
+
+df3 = world.merge(df3, how='left', left_on=['name'], right_on=['Country'])
+df3 = df3.dropna(subset=['Estimate_UN'])
 
 my_map = folium.Map(location=(39.22753573470106, -3.650093262568073),
     zoom_start=2, 
@@ -78,18 +81,18 @@ gdp.add_child(folium.GeoJson(data=df2, tooltip = folium.features.GeoJsonTooltip(
 
 ### --- Color countries --- ###
 
-bins = list(df1["Estimate_UN"].quantile([0, 0.65, 0.78, 0.865, 0.94, 0.987, 1]))
+bins = list(df3["Estimate_UN"].quantile([0, 0.65, 0.78, 0.865, 0.94, 0.987, 1]))
 
 folium.Choropleth(
     geo_data=df1,
     name="choropleth",
-    data=df1,
+    data=df3,
     columns=["Country", "Estimate_UN"],
     key_on="feature.properties.name",
     fill_color="YlGnBu",
     fill_opacity=0.7,
     line_opacity=0.1,
-    legend_name="GDP Per Capita (in US$)",
+    legend_name="GDP Per Capita (in EUR)",
     bins=bins,
     reset=True,
     ).add_to(my_map)
