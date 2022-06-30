@@ -23,12 +23,13 @@ df1['Country'] = df1['Country'].str.replace('Ivory Coast', """Côte d'Ivoire""")
 df1['Country'] = df1['Country'].str.replace('Dominican Republic', 'Dominican Rep.')
 df1['Country'] = df1['Country'].str.replace('Eswatini', 'eSwatini')
 df1['Country'] = df1['Country'].str.replace('Equatorial Guinea', 'Eq. Guinea')
+df1.drop(df1[df1['Estimate_UN'] == '—'].index, inplace = True)
+df1['Estimate_UN'] = df1['Estimate_UN'].apply(lambda g:int(str(g)))
 
 ### --- Change 'GDP Per Capita' values in GeoJsonToolTip from format of 12345.0 (USD) to €11,604 --- ###
 
 df2 = df1.copy()
 
-df2['Estimate_UN'] = df2['Estimate_UN'].fillna(0.0).astype(int)
 df2['Estimate_UN'] = df2['Estimate_UN'].apply(lambda g:g*0.94) # Convert USD to EUR
 
 df3 = df2.copy()
@@ -90,8 +91,8 @@ folium.Choropleth(
     columns=["Country", "Estimate_UN"],
     key_on="feature.properties.name",
     fill_color="YlGnBu",
-    fill_opacity=0.7,
-    line_opacity=0.1,
+    fill_opacity=0.8,
+    line_opacity=0.5,
     legend_name="GDP Per Capita (in EUR)",
     bins=bins,
     reset=True,
